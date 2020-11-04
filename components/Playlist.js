@@ -45,7 +45,7 @@ render() {
     <Text>{item.title._text}</Text>
      
    </View>
-    <Text style={headerStyles.duration}>{index}</Text>
+
     <Text style={headerStyles.duration}>{item.duration._text}</Text>
  </TouchableOpacity>
 

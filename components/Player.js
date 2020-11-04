@@ -1,141 +1,153 @@
-// React Native Video Library to Play Video in Android and IOS
-// https://aboutreact.com/react-native-video/
-
-// import React in our code
-import React, {useState, useRef} from 'react';
-
-// import all the components we are going to use
-import {SafeAreaView, StyleSheet, Text, View} from 'react-native';
-
-//Import React Native Video to play video
+import React, { Component } from 'react';
+import {
+  View,
+  Text,
+  StatusBar,
+} from 'react-native';
+import Header from '../components/playerComponents/Header';
+//import AlbumArt from './AlbumArt';
+//import TrackDetails from './TrackDetails';
+import SeekBar from '../components/playerComponents/SeekBar';
+import Controls from '../components/playerComponents/Controls';
 import Video from 'react-native-video';
 
-//Media Controls to control Play/Pause/Seek and full screen
-import
-  MediaControls, {PLAYER_STATES}
-from 'react-native-media-controls';
+export default class Player extends Component 
+{
+  constructor(props) 
+  {
+    super(props);
 
-const Player = () => {
-  const videoPlayer = useRef(null);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [paused, setPaused] = useState(false);
-  const [
-    playerState, setPlayerState
-  ] = useState(PLAYER_STATES.PLAYING);
-  const [screenType, setScreenType] = useState('content');
+    this.state = {
+      paused: true,
+      totalLength: 1,
+      currentPosition: 0,
+      selectedTrack: 0,
+      repeatOn: false,
+      shuffleOn: false,
+    };
+  }
 
-  const onSeek = (seek) => {
-    //Handler for change in seekbar
-    videoPlayer.current.seek(seek);
-  };
+  setDuration(data) {
+    // console.log(totalLength);
+    this.setState({totalLength: Math.floor(data.duration)});
+  }
 
-  const onPaused = (playerState) => {
-    //Handler for Video Pause
-    setPaused(!paused);
-    setPlayerState(playerState);
-  };
+  setTime(data) {
+    //console.log(data);
+    this.setState({currentPosition: Math.floor(data.currentTime)});
+  }
 
-  const onReplay = () => {
-    //Handler for Replay
-    setPlayerState(PLAYER_STATES.PLAYING);
-    videoPlayer.current.seek(0);
-  };
+  seek(time) {
+    time = Math.round(time);
+    this.refs.audioElement && this.refs.audioElement.seek(time);
+    this.setState({
+      currentPosition: time,
+      paused: false,
+    });
+  }
 
-  const onProgress = (data) => {
-    // Video Player will progress continue even if it ends
-    if (!isLoading && playerState !== PLAYER_STATES.ENDED) {
-      setCurrentTime(data.currentTime);
+  onBack() 
+  {
+    if (this.state.currentPosition < 10 && this.state.selectedTrack > 0) {
+      this.refs.audioElement && this.refs.audioElement.seek(0);
+      this.setState({ isChanging: true });
+      setTimeout(() => this.setState({
+        currentPosition: 0,
+        paused: false,
+        totalLength: 1,
+        isChanging: false,
+        selectedTrack: this.state.selectedTrack - 1,
+      }), 0);
+    } else {
+      this.refs.audioElement.seek(0);
+      this.setState({
+        currentPosition: 0,
+      });
     }
-  };
+  }
 
-  const onLoad = (data) => {
-    setDuration(data.duration);
-    setIsLoading(false);
-  };
+  onForward() {
+    if (this.state.selectedTrack < this.props.tracks.length - 1) {
+      this.refs.audioElement && this.refs.audioElement.seek(0);
+      this.setState({ isChanging: true });
+      setTimeout(() => this.setState({
+        currentPosition: 0,
+        totalLength: 1,
+        paused: false,
+        isChanging: false,
+        selectedTrack: this.state.selectedTrack + 1,
+      }), 0);
+    }
+  }
 
-  const onLoadStart = (data) => setIsLoading(true);
 
-  const onEnd = () => setPlayerState(PLAYER_STATES.ENDED);
 
-  const onError = () => alert('Oh! ', error);
+  render() 
+  {
+    //const track = this.props.tracks[this.state.selectedTrack];
+    const video = this.state.isChanging ? null : (
+      <Video source={{uri: 'http://ice42.securenetsystems.net/REVRADIO'}} // Can be a URL or a local file.
+        ref="audioElement"
+        paused={this.state.paused}               // Pauses playback entirely.
+        resizeMode="cover"           // Fill the whole screen at aspect ratio.
+        repeat={true}                // Repeat forever.
+        onLoadStart={this.loadStart} // Callback when video starts to load
+        onLoad={this.setDuration.bind(this)}    // Callback when video loads
+        onProgress={this.setTime.bind(this)}    // Callback every ~250ms with currentTime
+        onEnd={this.onEnd}           // Callback when playback finishes
+        onError={this.videoError}    // Callback when video cannot be loaded
+        style={styles.audioElement} />
+    );
 
-  const exitFullScreen = () => {
-    alert('Exit full screen');
-  };
+    return (
+      <View style={styles.container}>
+            <View style={styles.audio}>
+        <StatusBar hidden={true} />
+   
+     
+   
+        {/* <SeekBar
+          onSeek={this.seek.bind(this)}
+          trackLength={this.state.totalLength}
+          onSlidingStart={() => this.setState({paused: true})}
+          currentPosition={this.state.currentPosition} /> */}
+        <Controls
 
-  const enterFullScreen = () => {};
+       
+ 
+      
+          onPressPlay={() => this.setState({paused: false})}
+          onPressPause={() => this.setState({paused: true})}
+       
+          paused={this.state.paused}/>
+        {video}
+        <View style={styles.TextViewStyleRed}>
 
-  const onFullScreen = () => {
-    setIsFullScreen(isFullScreen);
-    if (screenType == 'content') setScreenType('cover');
-    else setScreenType('content');
-  };
 
-  const renderToolbar = () => (
-    <View>
-      <Text style={styles.toolbar}> toolbar </Text>
-    </View>
-  );
 
-  const onSeeking = (currentTime) => setCurrentTime(currentTime);
+</View>
+</View>
+      </View>
+    );
+  }
+}
 
-  return (
-    <View style={{flex: 1}}>
-      <Video
-        onEnd={onEnd}
-        onLoad={onLoad}
-        onLoadStart={onLoadStart}
-        onProgress={onProgress}
-        paused={paused}
-        ref={videoPlayer}
-        resizeMode={screenType}
-        onFullScreen={isFullScreen}
-        source={{
-          uri:
-            'http://ice42.securenetsystems.net/REVRADIO',
-        }}
-        style={styles.mediaPlayer}
-        volume={10}
-      />
-      <MediaControls
-        duration={duration}
-        isLoading={isLoading}
-        mainColor="#333"
-        onFullScreen={onFullScreen}
-        onPaused={onPaused}
-        onReplay={onReplay}
-        onSeek={onSeek}
-        onSeeking={onSeeking}
-        playerState={playerState}
-        progress={currentTime}
-        toolbar={renderToolbar()}
-      />
-    </View>
-  );
-};
-
-export default Player;
-
-const styles = StyleSheet.create({
+const styles = 
+{
   container: {
     flex: 1,
+    backgroundColor: 'rgb(4,4,4)',
   },
-  toolbar: {
-    marginTop: 30,
-    backgroundColor: 'white',
-    padding: 10,
-    borderRadius: 5,
-  },
-  mediaPlayer: {
+  audio: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
-    backgroundColor: 'black',
-    justifyContent: 'center',
+    bottom:0,
+    left:0,
+    right:0,
+    backgroundColor: '#ff00ff',
+    
   },
-});
+  audioElement: {
+    height: 0,
+    width: 0,
+  }
+};
